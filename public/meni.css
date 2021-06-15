@@ -1,0 +1,34 @@
+*{
+    font-family: 'Courier New', Courier, monospace;
+}
+
+#meni{
+    margin: 0px;
+    background-color: #8080ff;
+    height: auto;
+    padding: 1px;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+#meni ul{
+    margin: 0px;
+    padding-left: 5px;
+    text-decoration: none;
+    text-align: center;
+}
+
+#meni li{
+    margin: 0px;
+    display: inline;
+    text-decoration: none;
+}
+
+a{
+    text-decoration: none;
+    color: white;
+}
+
+a:hover{
+    color: black;
+}

@@ -1,0 +1,28 @@
+body{
+    background-color: beige;
+}
+
+textarea{
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 10px;
+    background-color: #dee6ef;
+}
+
+div{
+    margin: auto;
+    text-align: center;
+}
+
+label {
+    display: inline-block;
+    width:180px;
+    text-align: left;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+}
+
+.sirina{
+    width: 200px;
+    box-sizing: border-box;
+}

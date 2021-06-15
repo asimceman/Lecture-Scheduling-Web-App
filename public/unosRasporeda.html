@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <TITLE>Unos rasporeda</TITLE>
+    <META http-equiv="Content-Type" content="text/html; charset=utf-8">
+      <link rel="stylesheet" type="text/css" href="unosRasporeda.css">
+</head>
+<body onload="UcitajListe(); ucitajListe2()">
+  <div>
+  <form>
+
+    <label> Naziv aktivnosti: </label>
+    <input type="text" id="aktivnost" class="sirina" required><br>
+
+    <label> Naziv predmeta: </label>
+    <input type="text" id="naziv" class="sirina" required><br>
+
+    <label> Grupa: </label>
+    <input type="text" id="grupica" class="sirina" required><br>
+    
+
+    <label>Tip: </label>
+    <select name="vrijednost" id="vrijednost" class="sirina" required>
+        <option value="Predavanje">Predavanje</option>
+        <option value="Vjezbe">Vježbe</option>
+        <option value="Tutorijal">Tutorijal</option>
+    </select><br>
+    
+
+    <label>Vrijeme početka: </label>
+    <input type="time" id="pocetak" name="pocetak" class="sirina" required><br>
+    
+
+    <label>Vrijeme kraja: </label>  
+    <input type="time" id="kraj" name="kraj" class="sirina" required><br>
+     
+    <label>Dan: </label>
+    <select name="dan" id="dan" class="sirina" required>
+        <option value="Ponedjeljak">Ponedjeljak</option>
+        <option value="Utorak">Utorak</option>
+        <option value="Srijeda">Srijeda</option>
+        <option value="Cetvrtak">Četvrtak</option>
+        <option value="Petak">Petak</option>
+        <option value="Subota">Subota</option>
+        <option value="Nedjelja">Nedjelja</option>
+    </select><br>
+
+    <input type="submit" value="Napravi aktivnost!">
+
+  </form>
+</div>
+<br>
+  <div id="proba"></div>
+<script>
+
+function timeStringToFloat(time) {
+  var hoursMinutes = time.split(/[.:]/);
+  var hours = Number.parseInt(hoursMinutes[0], 10);
+  var minutes = hoursMinutes[1] ? Number.parseInt(hoursMinutes[1], 10) : 0;
+  return hours + minutes / 60;
+}
+
+  var predmeti = [];
+  var aktivnosti = [];
+  var grupe = [];
+  var imaGrupa = false;
+  var tipovi = [{naziv:'Predavanje'}, {naziv:'Vjezbe'}, {naziv:'Tutorijal'}];
+  var dani = [{naziv:'Ponedjeljak'}, {naziv:'Utorak'}, {naziv:'Srijeda'}, {naziv:'Cetvrtak'}, {naziv:'Petak'}, {naziv:'Subota'}, {naziv:'Nedjelja'}];
+  let nazivAktivnosti = ""
+  let naziv = ""
+  let grupa = ""
+  let tip = ""
+  let pocetak = ""
+  let kraj = ""
+  let dan = ""
+  let DanId = 0;
+  let TipId = 0;
+  let PredmetId = 0;
+  let GrupaId = null;
+  let neuspjesnaAktivnost = "{\"message\":\"Aktivnost nije validna!\"}"
+  let nespjesanPredmet = "{\"message\":\"Naziv predmeta postoji!\"}"
+
+  document.addEventListener('submit', e => {
+    nazivAktivnosti = document.getElementById('aktivnost').value;
+    naziv = document.getElementById('naziv').value;
+    grupa = document.getElementById('grupica').value;
+    tip = document.getElementById('vrijednost').value;
+    pocetak =timeStringToFloat(document.getElementById('pocetak').value);
+    kraj = timeStringToFloat(document.getElementById('kraj').value);
+    dan = document.getElementById('dan').value;
+
+
+    for(let i=0; i<tipovi.length; i++){
+      if(tipovi[i].naziv == tip)
+        TipId = tipovi[i].id;
+    }
+
+
+    for(let i=0; i<dani.length; i++){
+      if(dani[i].naziv == dan)
+        DanId = dani[i].id;
+    }
+
+    let ima = false;
+    for(let i=0; i<predmeti.length; i++){
+      if(naziv == predmeti[i].naziv){
+        ima=true;
+        PredmetId = predmeti[i].id;
+        for(let j=0; j<grupe.length; j++){
+          if(grupa == grupe[j].naziv){
+          imaGrupa=true;
+          GrupaId = grupe[j].id;
+          break;
+        }
+    }
+        break;
+      }
+    }
+
+    
+    imaGrupa = false;
+    if(ima){
+      if(!imaGrupa)
+        ajaxNapraviGrupu();
+      else  {
+        ajaxPredmetPostoji()
+      }
+    }
+    else
+      ajaxPredmetNePostoji();
+   // Prevent the default form submit
+   e.preventDefault();
+ 
+ });
+
+ function dajNoveIdGrupe(){
+  let ajax4 = new XMLHttpRequest();
+        
+        ajax4.onreadystatechange = function(){
+            if (ajax4.readyState == 4 && ajax4.status == 200){
+              grupe = JSON.parse(ajax4.responseText);
+              for(let i=0; i<grupe.length; i++){
+                if(grupe[i].naziv==grupa){
+                  GrupaId = grupe[i].id;
+                  break;
+                }
+              }
+              ajaxPredmetPostoji();
+          }
+	          if (ajax4.readyState == 4 && ajax4.status == 404)
+                console.log("Nemoguc GET zahtjev");      
+        }
+        ajax4.open("GET", "http://localhost:3000/v2/grupe", true);
+        ajax4.send();
+ }
+
+function ajaxNapraviGrupu(){
+  let ajax4 = new XMLHttpRequest();
+        
+        ajax4.onreadystatechange = function(){
+            if (ajax4.readyState == 4 && ajax4.status == 200){
+              dajNoveIdGrupe();
+          }
+	          if (ajax4.readyState == 4 && ajax4.status == 404)
+                console.log("Nemoguc GET zahtjev");      
+        }
+        ajax4.open("POST", "http://localhost:3000/v2/grupa", true);
+        ajax4.setRequestHeader("Content-type", "application/json");
+        var data = {naziv:grupa, PredmetId:PredmetId};
+        ajax4.send(JSON.stringify(data));
+}
+
+ function ajaxPredmetNePostoji(){
+       var ajax = new XMLHttpRequest();
+        
+        ajax.onreadystatechange = async ()=>{
+            if (ajax.readyState == 4 && ajax.status == 200){
+
+                let ajax2 = new XMLHttpRequest();
+                ajax2.onreadystatechange = function(){
+                if (ajax2.readyState == 4 && ajax2.status == 200){
+                predmeti = JSON.parse(ajax2.responseText);
+                    for(let i=0; i<predmeti.length; i++){
+                    if(naziv == predmeti[i].naziv){
+                      PredmetId = predmeti[i].id
+                      break;
+                    }
+                  }
+                  ajaxKreirajGrupu();
+            }
+	            if (ajax2.readyState == 4 && ajax2.status == 404)
+                console.log("Nemoguc GET zahtjev");   
+          }
+            ajax2.open("GET", "http://localhost:3000/v2/predmeti", true);
+            ajax2.send();
+          }
+	          if (ajax.readyState == 4 && ajax.status == 404)
+                console.log("Nemoguc GET zahtjev");   
+        }
+        ajax.open("POST", "http://localhost:3000/v2/predmet", true);
+        ajax.setRequestHeader("Content-type", "application/json");
+        var data = {naziv:naziv};
+        ajax.send(JSON.stringify(data)); 
+    }
+
+    function dajNoveIdGrupe2(){
+  let ajax4 = new XMLHttpRequest();
+        
+        ajax4.onreadystatechange = function(){
+            if (ajax4.readyState == 4 && ajax4.status == 200){
+              grupe = JSON.parse(ajax4.responseText);
+              for(let i=0; i<grupe.length; i++){
+                if(grupe[i].naziv==grupa){
+                  GrupaId = grupe[i].id;
+                  break;
+                }
+              }
+              ajaxPredmetNapravljen();
+          }
+	          if (ajax4.readyState == 4 && ajax4.status == 404)
+                console.log("Nemoguc GET zahtjev");      
+        }
+        ajax4.open("GET", "http://localhost:3000/v2/grupe", true);
+        ajax4.send();
+ }
+
+    function ajaxKreirajGrupu(){
+      let ajax4 = new XMLHttpRequest();
+        
+        ajax4.onreadystatechange = function(){
+            if (ajax4.readyState == 4 && ajax4.status == 200){
+              dajNoveIdGrupe2();
+          }
+	          if (ajax4.readyState == 4 && ajax4.status == 404)
+                console.log("Nemoguc GET zahtjev");      
+        }
+        ajax4.open("POST", "http://localhost:3000/v2/grupa", true);
+        ajax4.setRequestHeader("Content-type", "application/json");
+        var data = {naziv:grupa, PredmetId:PredmetId};
+        ajax4.send(JSON.stringify(data));
+    }
+
+    function ajaxPredmetNapravljen(){
+      var ajax4 = new XMLHttpRequest();
+        
+        ajax4.onreadystatechange = function(){
+            if (ajax4.readyState == 4 && ajax4.status == 200){
+              UcitajListe()
+              if(ajax4.responseText == neuspjesnaAktivnost){
+                ajaxObrisiPredmet();
+                alert("Aktivnost nije validna!");
+              }
+              else
+                alert("Uspjesno dodana aktivnost!");
+          }
+	          if (ajax4.readyState == 4 && ajax4.status == 404)
+                console.log("Nemoguc GET zahtjev");      
+        }
+        ajax4.open("POST", "http://localhost:3000/v2/aktivnost", true);
+        ajax4.setRequestHeader("Content-type", "application/json");
+        var data = {naziv:nazivAktivnosti, TipId:TipId, pocetak:Number.parseFloat(pocetak), kraj:Number.parseFloat(kraj), DanId:DanId, PredmetId:PredmetId, GrupaId:GrupaId};
+        ajax4.send(JSON.stringify(data));
+    }
+
+    function ajaxPredmetPostoji(){
+        var ajax2 = new XMLHttpRequest();
+        
+        ajax2.onreadystatechange = function(){
+            if (ajax2.readyState == 4 && ajax2.status == 200){
+              UcitajListe();
+              if(ajax2.responseText != neuspjesnaAktivnost)
+              alert("Aktivnost uspjesno dodana!") 
+              else if(ajax2.responseText == neuspjesnaAktivnost && !imaGrupa){
+                ajaxObrisiGrupu();
+                alert("Aktivnost nije validna!");
+              }
+          }
+              
+	          if (ajax2.readyState == 4 && ajax2.status == 404)
+                console.log("Nemoguc GET zahtjev");      
+        }
+        ajax2.open("POST", "http://localhost:3000/v2/aktivnost", true);
+        ajax2.setRequestHeader("Content-type", "application/json");
+        var data = {naziv:nazivAktivnosti, TipId:TipId, pocetak:Number.parseFloat(pocetak), kraj:Number.parseFloat(kraj), DanId:DanId, PredmetId:PredmetId, GrupaId:GrupaId};
+        ajax2.send(JSON.stringify(data));
+    }
+
+    function ajaxObrisiGrupu(){
+      let ajax3 = new XMLHttpRequest();
+        
+        ajax3.onreadystatechange = function(){
+            if (ajax3.readyState == 4 && ajax3.status == 200){
+              UcitajListe();
+          }
+	          if (ajax3.readyState == 4 && ajax3.status == 404)
+                console.log("Nemoguc GET zahtjev");   
+        }
+        ajax3.open("DELETE", "http://localhost:3000/v2/grupa/" + GrupaId, true);
+        ajax3.send();
+    }
+
+    function ajaxObrisiPredmet(){
+      var ajax3 = new XMLHttpRequest();
+        
+        ajax3.onreadystatechange = function(){
+            if (ajax3.readyState == 4 && ajax3.status == 200){
+              UcitajListe();
+              if(!imaGrupa)
+                ajaxObrisiGrupu();
+          }
+	          if (ajax3.readyState == 4 && ajax3.status == 404)
+                console.log("Nemoguc GET zahtjev");   
+        }
+        ajax3.open("DELETE", "http://localhost:3000/v2/predmet/" + PredmetId, true);
+        ajax3.send();
+    }
+
+    function dajTipove(){
+      let ajax2 = new XMLHttpRequest();
+        
+        ajax2.onreadystatechange = function(){
+            if (ajax2.readyState == 4 && ajax2.status == 200){
+              tipovi = JSON.parse((ajax2.responseText));
+          }
+	          if (ajax2.readyState == 4 && ajax2.status == 404)
+                console.log("Nemoguc GET zahtjev");   
+        }
+        ajax2.open("GET", "http://localhost:3000/v2/tipovi", true);
+        ajax2.send();
+    }
+
+    function dajDane(){
+      let ajax2 = new XMLHttpRequest();
+        
+        ajax2.onreadystatechange = function(){
+            if (ajax2.readyState == 4 && ajax2.status == 200){
+              dani = JSON.parse((ajax2.responseText));
+          }
+	          if (ajax2.readyState == 4 && ajax2.status == 404)
+                console.log("Nemoguc GET zahtjev");   
+        }
+        ajax2.open("GET", "http://localhost:3000/v2/dani", true);
+        ajax2.send();
+    }
+
+    function dajGrupe(){
+      let ajax2 = new XMLHttpRequest();
+        ajax2.onreadystatechange = function(){
+            if (ajax2.readyState == 4 && ajax2.status == 200){
+              grupe = JSON.parse(ajax2.responseText);
+          }
+	          if (ajax2.readyState == 4 && ajax2.status == 404)
+                console.log("Nemoguc GET zahtjev");   
+        }
+        ajax2.open("GET", "http://localhost:3000/v2/grupe", true);
+        ajax2.send();
+    }
+
+    function dajAktivnosti(){
+      let ajax2 = new XMLHttpRequest();
+        ajax2.onreadystatechange = function(){
+            if (ajax2.readyState == 4 && ajax2.status == 200){
+              aktivnosti = JSON.parse(ajax2.responseText);
+              dajGrupe();
+          }
+	          if (ajax2.readyState == 4 && ajax2.status == 404)
+                console.log("Nemoguc GET zahtjev");   
+        }
+        ajax2.open("GET", "http://localhost:3000/v2/aktivnosti", true);
+        ajax2.send();
+    }
+
+    async function UcitajListe(){
+      
+        let ajax = new XMLHttpRequest();
+        ajax.onreadystatechange = function(){
+            if (ajax.readyState == 4 && ajax.status == 200){
+            predmeti = JSON.parse(ajax.responseText);
+            dajAktivnosti();
+          }
+	          if (ajax.readyState == 4 && ajax.status == 404)
+                console.log("Nemoguc GET zahtjev");   
+        }
+        ajax.open("GET", "http://localhost:3000/v2/predmeti", true);
+        ajax.send();
+
+        
+  }
+
+  function ucitajListe2(){
+    let ajax3 = new XMLHttpRequest();
+        
+        ajax3.onreadystatechange = function(){
+            if (ajax3.readyState == 4 && ajax3.status == 200){
+              dajTipove();
+          }
+	          if (ajax3.readyState == 4 && ajax3.status == 404)
+                console.log("Nemoguc GET zahtjev");      
+        }
+        ajax3.open("POST", "http://localhost:3000/v2/tipovi", true);
+        ajax3.setRequestHeader("Content-type", "application/json");
+        ajax3.send(JSON.stringify(tipovi));
+
+        let ajax4 = new XMLHttpRequest();
+        
+        ajax4.onreadystatechange = function(){
+            if (ajax4.readyState == 4 && ajax4.status == 200){
+              dajDane();
+          }
+	          if (ajax4.readyState == 4 && ajax4.status == 404)
+                console.log("Nemoguc GET zahtjev");      
+        }
+        ajax4.open("POST", "http://localhost:3000/v2/dani", true);
+        ajax4.setRequestHeader("Content-type", "application/json");
+        ajax4.send(JSON.stringify(dani));
+  }
+</script>
+</body>
+</html>
